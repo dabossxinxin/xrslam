@@ -6,35 +6,35 @@
 
 namespace xrslam {
 
-class Config;
-class Frame;
-class Map;
+	class Config;
+	class Frame;
+	class Map;
 
-class SlidingWindowTracker {
-  public:
-    SlidingWindowTracker(std::unique_ptr<Map> keyframe_map,
-                         std::shared_ptr<Config> config);
-    ~SlidingWindowTracker();
+	class SlidingWindowTracker {
+	public:
+		SlidingWindowTracker(std::unique_ptr<Map> keyframe_map,
+			std::shared_ptr<Config> config);
+		~SlidingWindowTracker();
 
-    void mirror_frame(Map *feature_tracking_map, size_t frame_id);
+		void mirror_frame(Map *feature_tracking_map, size_t frame_id);
 
-    void localize_newframe();
-    void track_landmark();
-    void refine_window();
-    void slide_window();
-    bool manage_keyframe();
+		void localize_newframe();
+		void track_landmark();
+		void refine_window();
+		void slide_window();
+		bool manage_keyframe();
 
-    void refine_subwindow();
+		void refine_subwindow();
 
-    bool track();
+		bool track();
 
-    std::tuple<double, PoseState, MotionState> get_latest_state() const;
+		std::tuple<double, PoseState, MotionState> get_latest_state() const;
 
-    std::unique_ptr<Map> map;
+		std::unique_ptr<Map>	map;	// 滑窗中管理的地图
 
-  private:
-    std::shared_ptr<Config> config;
-};
+	private:
+		std::shared_ptr<Config> config;	// slam系统配置信息
+	};
 
 } // namespace xrslam
 

@@ -49,9 +49,9 @@ void Map::erase_frame(size_t index) {
 }
 
 void Map::marginalize_frame(size_t index) {
-    runtime_assert(index == 0, "currently only index == 0 is allowed");
-    runtime_assert(marginalization_factor,
-                   "marginalization_factor is not initialized yet");
+	runtime_assert(index == 0, "currently only index == 0 is allowed");
+	runtime_assert(marginalization_factor, "marginalization_factor is not initialized yet");
+
     marginalization_factor->marginalize(index);
     Frame *frame = frames[index].get();
     for (size_t i = 0; i < frame->keypoint_num(); ++i) {
@@ -83,8 +83,8 @@ Track *Map::create_track() {
         std::make_unique<Track>(construct_by_map_t());
     track->map_index = tracks.size();
     track->map = this;
-    track_id_map[track->id()] = track.get();
-    return tracks.emplace_back(std::move(track)).get();
+	track_id_map[track->id()] = track.get();
+	return tracks.emplace_back(std::move(track)).get();
 }
 
 void Map::erase_track(Track *track) {

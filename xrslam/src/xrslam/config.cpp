@@ -33,9 +33,7 @@ size_t Config::initializer_min_matches() const { return 50; }
 
 double Config::initializer_min_parallax() const { return 10; }
 
-size_t Config::initializer_min_triangulation() const {
-    return 50; // 50
-}
+size_t Config::initializer_min_triangulation() const { return 50; }
 
 size_t Config::initializer_min_landmarks() const { return 30; }
 

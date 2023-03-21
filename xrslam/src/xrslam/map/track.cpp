@@ -20,24 +20,25 @@ void Track::add_keypoint(Frame *frame, size_t keypoint_index) {
 }
 
 void Track::remove_keypoint(Frame *frame, bool suicide_if_empty) {
-    size_t keypoint_index = keypoint_refs.at(frame);
-    std::optional<vector<3>> landmark;
-    if (frame == first_frame()) {
-        landmark = get_landmark_point();
-    }
-    frame->tracks[keypoint_index] = nullptr;
-    frame->reprojection_error_factors[keypoint_index].reset();
-    keypoint_refs.erase(frame);
-    if (keypoint_refs.size() > 0) {
-        if (landmark.has_value()) {
-            set_landmark_point(landmark.value());
-        }
-    } else {
-        tag(TT_VALID) = false;
-        if (suicide_if_empty) {
-            map->recycle_track(this);
-        }
-    }
+	size_t keypoint_index = keypoint_refs.at(frame);
+	std::optional<vector<3>> landmark;
+	if (frame == first_frame()) {
+		landmark = get_landmark_point();
+	}
+	frame->tracks[keypoint_index] = nullptr;
+	frame->reprojection_error_factors[keypoint_index].reset();
+	keypoint_refs.erase(frame);
+	if (keypoint_refs.size() > 0) {
+		if (landmark.has_value()) {
+			set_landmark_point(landmark.value());
+		}
+	}
+	else {
+		tag(TT_VALID) = false;
+		if (suicide_if_empty) {
+			map->recycle_track(this);
+		}
+	}
 }
 
 std::optional<vector<3>> Track::triangulate() const {

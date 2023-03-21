@@ -10,66 +10,75 @@
 
 namespace xrslam {
 
-enum TrackTag { TT_VALID = 0, TT_TRIANGULATED, TT_FIX_INVD };
+	enum TrackTag { TT_VALID = 0, TT_TRIANGULATED, TT_FIX_INVD };
 
-class Track : public Tagged<TrackTag>, public Identifiable<Track> {
-    friend class Map;
-    size_t map_index;
-    Map *map;
-    Track();
+	class Track : public Tagged<TrackTag>, public Identifiable<Track> {
+		friend class Map;
+		size_t map_index;
+		Map *map;
+		Track();
 
-  public:
-    Track(const Map::construct_by_map_t &) : Track() {}
+	public:
+		Track(const Map::construct_by_map_t &) : Track() {}
 
-    virtual ~Track();
+		virtual ~Track();
 
-    size_t keypoint_num() const { return keypoint_refs.size(); }
+		size_t keypoint_num() const { return keypoint_refs.size(); }
 
-    std::pair<Frame *, size_t> first_keypoint() const {
-        return *keypoint_refs.begin();
-    }
+		std::pair<Frame *, size_t> first_keypoint() const {
+			return *keypoint_refs.begin();
+		}
 
-    std::pair<Frame *, size_t> last_keypoint() const {
-        return *keypoint_refs.rbegin();
-    }
+		std::pair<Frame *, size_t> last_keypoint() const {
+			return *keypoint_refs.rbegin();
+		}
 
-    Frame *first_frame() const { return keypoint_refs.begin()->first; }
+		Frame *first_frame() const {
+			return keypoint_refs.begin()->first; 
+		}
 
-    Frame *last_frame() const { return keypoint_refs.rbegin()->first; }
+		Frame *last_frame() const { 
+			return keypoint_refs.rbegin()->first;
+		}
 
-    const std::map<Frame *, size_t, compare<Frame *>> &keypoint_map() const {
-        return keypoint_refs;
-    }
+		const std::map<Frame *, size_t, compare<Frame *>> &keypoint_map() const {
+			return keypoint_refs;
+		}
 
-    bool has_keypoint(Frame *frame) const {
-        return keypoint_refs.count(frame) > 0;
-    }
+		bool has_keypoint(Frame *frame) const {
+			return keypoint_refs.count(frame) > 0;
+		}
 
-    size_t get_keypoint_index(Frame *frame) const {
-        if (has_keypoint(frame)) {
-            return keypoint_refs.at(frame);
-        } else {
-            return nil();
-        }
-    }
+		size_t get_keypoint_index(Frame *frame) const {
+			if (has_keypoint(frame)) {
+				return keypoint_refs.at(frame);
+			}
+			else {
+				return nil();
+			}
+		}
 
-    const vector<3> &get_keypoint(Frame *frame) const;
-    void add_keypoint(Frame *frame, size_t keypoint_index);
-    void remove_keypoint(Frame *frame, bool suicide_if_empty = true);
+		std::unique_lock<std::mutex> lock() const {
+			return map->lock();
+		}
 
-    std::optional<vector<3>> triangulate() const;
-    double triangulation_angle(const vector<3> &p) const;
+		const vector<3> &get_keypoint(Frame *frame) const;
+		void add_keypoint(Frame *frame, size_t keypoint_index);
+		void remove_keypoint(Frame *frame, bool suicide_if_empty = true);
 
-    vector<3> get_landmark_point() const;
-    void set_landmark_point(const vector<3> &p);
+		std::optional<vector<3>> triangulate() const;
+		double triangulation_angle(const vector<3> &p) const;
 
-    std::unique_lock<std::mutex> lock() const { return map->lock(); }
+		vector<3> get_landmark_point() const;
+		void set_landmark_point(const vector<3> &p);
 
-    LandmarkState landmark;
+		// 当前跟踪特征点的逆深度以及重投影误差信息
+		LandmarkState landmark;
 
-  private:
-    std::map<Frame *, size_t, compare<Frame *>> keypoint_refs;
-};
+	private:
+		// 观测到当前特征点的图像帧以及在该帧上的序号
+		std::map<Frame*, size_t, compare<Frame*>> keypoint_refs;
+	};
 
 } // namespace xrslam
 
