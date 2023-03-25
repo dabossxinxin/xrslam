@@ -15,8 +15,8 @@ const vector<3> &Track::get_keypoint(Frame *frame) const {
 void Track::add_keypoint(Frame *frame, size_t keypoint_index) {
     keypoint_refs[frame] = keypoint_index;
     frame->tracks[keypoint_index] = this;
-    frame->reprojection_error_factors[keypoint_index] =
-        Solver::create_reprojection_error_factor(frame, this);
+	frame->reprojection_error_factors[keypoint_index] =
+		Solver::create_reprojection_error_factor(frame, this);
 }
 
 void Track::remove_keypoint(Frame *frame, bool suicide_if_empty) {

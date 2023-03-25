@@ -3,6 +3,8 @@
 
 #include <xrslam/common.h>
 
+//#define XRSLAM_ENABLE_THREADING
+
 namespace xrslam {
 
 	class Worker {

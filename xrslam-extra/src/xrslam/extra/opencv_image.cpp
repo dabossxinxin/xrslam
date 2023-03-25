@@ -39,12 +39,12 @@ double OpenCvImage::evaluate(const vector<2> &u, vector<2> &ddu,
 void OpenCvImage::detect_keypoints(std::vector<vector<2>> &keypoints,
                                    size_t max_points,
                                    double keypoint_distance) const {
-
     std::vector<KeyPoint> cvkeypoints;
 
     gftt(max_points)->detect(image, cvkeypoints);
 
     if (cvkeypoints.size() > 0) {
+		// 按照特征点响应值排序
         std::sort(cvkeypoints.begin(), cvkeypoints.end(),
                   [](const auto &a, const auto &b) {
                       return a.response > b.response;
@@ -55,10 +55,12 @@ void OpenCvImage::detect_keypoints(std::vector<vector<2>> &keypoints,
                                        cvkeypoints[i].pt.y);
         }
 
+		// 泊松圆盘滤波
         PoissonDiskFilter<2> filter(keypoint_distance);
         filter.preset_points(keypoints);
         filter.insert_points(new_keypoints);
 
+		// 移除图像边缘特征点
         new_keypoints.erase(
             std::remove_if(new_keypoints.begin(), new_keypoints.end(),
                            [this](const auto &keypoint) {
@@ -68,6 +70,7 @@ void OpenCvImage::detect_keypoints(std::vector<vector<2>> &keypoints,
                            }),
             new_keypoints.end());
 
+		// 得到的最终keypoint插入到输入的keypoint中
         keypoints.insert(keypoints.end(), new_keypoints.begin(),
                          new_keypoints.end());
     }
@@ -165,12 +168,14 @@ void OpenCvImage::track_keypoints(const Image *next_image,
 	cv::waitKey(0);*/
 }
 
+// 1、图像增强
+// 2、生成光流图像金字塔
 void OpenCvImage::preprocess() {
     clahe()->apply(image, image);
     image_pyramid.clear();
 
-    buildOpticalFlowPyramid(image, image_pyramid, Size(21, 21),
-                            (int)level_num(), true);
+	buildOpticalFlowPyramid(image, image_pyramid, Size(21, 21),
+		(int)level_num(), true);
 }
 
 void OpenCvImage::correct_distortion(const matrix<3> &intrinsics,

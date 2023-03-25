@@ -31,7 +31,9 @@ namespace xrslam::extra {
 			std::vector<vector<2>> &next_keypoints,
 			std::vector<char> &result_status) const override;
 
+		// 图像增强以及生成光流金字塔
 		void preprocess() override;
+
 		void correct_distortion(const matrix<3> &intrinsics,
 			const vector<4> &coeffs);
 		void release_image_buffer() override;

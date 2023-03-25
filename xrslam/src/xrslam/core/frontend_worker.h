@@ -20,7 +20,8 @@ class FrontendWorker : public Worker {
     bool empty() const override;
     void work(std::unique_lock<std::mutex> &l) override;
 
-    void issue_frame(Frame *frame);
+	// feature_track线程向front_end线程传输帧ID
+	void issue_frame(Frame *frame);
 
     size_t create_virtual_object();
     OutputObject get_virtual_object_pose_by_id(size_t id);

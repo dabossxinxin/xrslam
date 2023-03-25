@@ -50,8 +50,9 @@ namespace xrslam {
 
 		Track *get_track(size_t keypoint_index, Map *allocation_map);
 
-		// 检测当前帧中的特征点
+		// 在frame图像中提取特征点
 		void detect_keypoints(Config *config);
+
 		// 基于当前帧特征点以及配置光流跟踪出下一帧的特征点
 		void track_keypoints(Frame *next_frame, Config *config);
 

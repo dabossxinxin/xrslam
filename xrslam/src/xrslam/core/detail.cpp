@@ -149,20 +149,19 @@ namespace xrslam {
 			inspect_debug(input_output_lag, lag) {
 				lag = std::min(t - state_time, 5.0);
 			}
-			// std::cout << "delay: " << t - state_time << std::endl;
+			std::cout << "delay: " << t - state_time << std::endl;
 
 			while (!frontal_imus.empty() && frontal_imus.front().t <= state_time) {
 				frontal_imus.pop_front();
 			}
 			for (const auto &imu : frontal_imus) {
 				if (imu.t <= t) {
-					propagate_state(state_time, state_pose, state_motion, imu.t,
-						imu.w, imu.a);	// 通过imu的测量值预测t时刻的姿态
+					// 通过imu的测量值预测t时刻的姿态
+					propagate_state(state_time, state_pose, state_motion, imu.t, imu.w, imu.a);
 				}
 			}
 			output_pose.q = state_pose.q * config->output_to_body_rotation();
-			output_pose.p =
-				state_pose.p + state_pose.q * config->output_to_body_translation();
+			output_pose.p = state_pose.p + state_pose.q * config->output_to_body_translation();
 		}
 		else {
 			output_pose.q.coeffs().setZero();

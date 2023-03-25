@@ -23,7 +23,7 @@ void Map::attach_frame(std::unique_ptr<Frame> frame, size_t position) {
     if (position == nil()) {
         frames.emplace_back(std::move(frame));
     } else {
-        frames.emplace(frames.begin() + position, std::move(frame));
+		frames.emplace(frames.begin() + position, std::move(frame));
     }
 }
 
@@ -69,12 +69,14 @@ size_t Map::frame_index_by_id(size_t id) const {
         bool operator<(const FrameID &fi) const { return id < fi.id; }
         size_t id;
     };
+	
+	// 寻找有序数组frames中frame_id>=id的帧 
     auto it = std::lower_bound(frames.begin(), frames.end(), id,
                                std::less<FrameID>());
-    if (it == frames.end())
-        return nil();
-    if (id < (*it)->id())
-        return nil();
+	if (it == frames.end())
+		return nil();
+	if (id < (*it)->id())
+		return nil();
     return std::distance(frames.begin(), it);
 }
 
@@ -106,7 +108,7 @@ void Map::prune_tracks(const std::function<bool(const Track *)> &condition) {
     }
 }
 
-Track *Map::get_track_by_id(size_t id) const {
+Track* Map::get_track_by_id(size_t id) const {
     if (track_id_map.count(id)) {
         return track_id_map.at(id);
     } else {

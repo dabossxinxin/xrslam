@@ -59,7 +59,7 @@ namespace xrslam {
 		InspectionSupport(const VersionTag &tag);
 		~InspectionSupport();
 
-		static std::pair<std::any &, std::unique_lock<std::mutex>>
+		static std::pair<std::any &, std::unique_lock<std::mutex>> 
 			get(InspectItem item);
 
 	private:

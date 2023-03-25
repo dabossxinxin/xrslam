@@ -28,14 +28,21 @@ namespace xrslam {
 	}
 
 	void FrontendWorker::work(std::unique_lock<std::mutex> &l) {
+
+		std::cout << "pending frame size: " << pending_frame_ids.size() << std::endl;
+		clock_t front_end_start = clock();
+
 		if (initializer) {
 			size_t pending_frame_id = pending_frame_ids.front();
 			pending_frame_ids.clear();
 			l.unlock();
+
+			// 将feature_track端的地图传给initialize对象供视觉惯导初始化
 			synchronized(detail->feature_tracker->map) {
 				initializer->mirror_keyframe_map(detail->feature_tracker->map.get(),
 					pending_frame_id);
 			}
+
 			if ((sliding_window_tracker = initializer->initialize())) {
 #if defined(XRSLAM_IOS)
 				synchronized(detail->feature_tracker->keymap) {
@@ -63,10 +70,13 @@ namespace xrslam {
 			size_t pending_frame_id = pending_frame_ids.front();
 			pending_frame_ids.pop_front();
 			l.unlock();
+
+			// 将feature_track中维护的地图传给sliding_window供滑窗优化
 			synchronized(detail->feature_tracker->map) {
 				sliding_window_tracker->mirror_frame(
 					detail->feature_tracker->map.get(), pending_frame_id);
 			}
+
 			if (sliding_window_tracker->track()) {
 #if defined(XRSLAM_IOS)
 				synchronized(detail->feature_tracker->keymap) {
@@ -87,6 +97,10 @@ namespace xrslam {
 				sliding_window_tracker.reset();
 			}
 		}
+
+		clock_t front_end_end = clock();
+		std::cout << "front end time: " <<
+			double(front_end_end - front_end_start) / CLOCKS_PER_SEC << "s" << std::endl;
 	}
 
 	void FrontendWorker::issue_frame(Frame *frame) {

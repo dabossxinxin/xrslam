@@ -69,7 +69,7 @@ namespace xrslam {
 	private:
 		void recycle_track(Track *track);
 
-		std::deque<std::unique_ptr<Frame>>		frames;						// map中存储的所有帧
+		std::deque<std::unique_ptr<Frame>>		frames;						// map中存储的所有帧,从队列的尾部插入元素
 		std::vector<std::unique_ptr<Track>>		tracks;						// map中存储的所有特征点跟踪器
 		std::map<size_t, Track *>				track_id_map;				// TODO
 		std::unique_ptr<VirtualObjectManager>	virtual_object_manager;		// map中存储的所有虚拟对象

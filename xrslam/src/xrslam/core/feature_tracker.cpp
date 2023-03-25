@@ -22,6 +22,7 @@ namespace xrslam {
 	FeatureTracker::~FeatureTracker() = default;
 
 	void FeatureTracker::work(std::unique_lock<std::mutex> &l) {
+		clock_t feature_track_start = clock();
 		// 1、获取当前要处理的frame
 		auto ft_timer = make_timer([](double t) {
 			inspect(feature_tracker_time, time) {
@@ -33,11 +34,13 @@ namespace xrslam {
 			}
 		});
 
+		std::cout << "frames size: " << frames.size() << std::endl;
+
 		std::unique_ptr<Frame> frame = std::move(frames.front());
 		frames.pop_front();
 		l.unlock();
 
-		// 2、frame预处理
+		// 2、frame预处理：图像增强以及光流金字塔构建
 		frame->image->preprocess();
 
 		// 3、获取当前帧最近一帧图像的姿态
@@ -45,8 +48,7 @@ namespace xrslam {
 			latest_optimized_pose, latest_optimized_motion] =
 			detail->frontend->get_latest_state();
 		bool is_initialized = latest_optimized_frame_id != nil();
-		bool slidind_window_frame_tag =
-			!is_initialized ||
+		bool slidind_window_frame_tag = !is_initialized ||
 			frame->id() % config->sliding_window_tracker_frequent() == 0;
 
 		synchronized(map) {
@@ -59,8 +61,7 @@ namespace xrslam {
 							map->get_frame(latest_optimized_frame_index);
 						latest_optimized_frame->pose = latest_optimized_pose;
 						latest_optimized_frame->motion = latest_optimized_motion;
-						for (size_t j = latest_optimized_frame_index + 1;
-							j < map->frame_num(); ++j) {
+						for (size_t j = latest_optimized_frame_index + 1; j < map->frame_num(); ++j) {
 							Frame *frame_i = map->get_frame(j - 1);
 							Frame *frame_j = map->get_frame(j);
 							frame_j->preintegration.integrate(
@@ -77,23 +78,29 @@ namespace xrslam {
 						latest_state.reset();
 					}
 				}
+
+				// 若当前帧IMU起始数据时间与上一帧图像帧时间相差超过阈值，
+				// 此时需要将上一帧最后一个位置的IMU数据给到当前帧保证数据连续性
 				Frame *last_frame = map->get_frame(map->frame_num() - 1);
 				if (!last_frame->preintegration.data.empty()) {
 					if (frame->preintegration.data.empty() ||
-						(frame->preintegration.data.front().t -
-							last_frame->image->t >
-							1.0e-5)) {
+						(frame->preintegration.data.front().t - 
+							last_frame->image->t > 1.0e-5)) {
 						ImuData imu = last_frame->preintegration.data.back();
 						imu.t = last_frame->image->t;
 						frame->preintegration.data.insert(
 							frame->preintegration.data.begin(), imu);
 					}
 				}
-				frame->preintegration.integrate(
-					frame->image->t, last_frame->motion.bg, last_frame->motion.ba,
-					false, false);
+				// 当前帧IMU数据积分
+				frame->preintegration.integrate(frame->image->t, last_frame->motion.bg,
+					last_frame->motion.ba, false, false);
+
+				// 根据上一帧的特征点信息使用光流法跟踪出当前帧特征
 				last_frame->track_keypoints(frame.get(), config.get());
+
 				if (is_initialized) {
+					// 根据上一帧姿态以及预积分量预测当前帧状态
 					frame->preintegration.predict(last_frame, frame.get());
 #if defined(XRSLAM_IOS)
 					synchronized(keymap) {
@@ -118,8 +125,7 @@ namespace xrslam {
 					latest_state = { frame->image->t, frame->pose, frame->motion };
 					if (config->visual_localization_enable() &&
 						detail->frontend->global_localization_state()) {
-						detail->frontend->localizer->query_localization(
-							frame->image, frame->pose);
+						detail->frontend->localizer->query_localization(frame->image, frame->pose);
 						// detail->frontend->localizer->send_pose_message(frame->image->t);
 					}
 					lk.unlock();
@@ -128,18 +134,22 @@ namespace xrslam {
 				last_frame->image->release_image_buffer();
 			}
 
+			// 送入滑窗中的帧要参加优化，需要更多的视觉信息
 			if (slidind_window_frame_tag)
 				frame->detect_keypoints(config.get());
 			map->attach_frame(std::move(frame));
 
-			while (map->frame_num() >
+			// 避免feature_track_map无限增大
+			// TODO：通过只存关键帧的形式进行改进
+			/*while (map->frame_num() >
 				(is_initialized
 					? config->feature_tracker_max_frames()
 					: config->feature_tracker_max_init_frames()) &&
 				map->get_frame(0)->id() < latest_optimized_frame_id) {
 				map->erase_frame(0);
-			}
+			}*/
 
+			// 绘制特征点图像
 			inspect_debug(feature_tracker_painter, p) {
 				if (p.has_value()) {
 					auto painter = std::any_cast<InspectPainter *>(p);
@@ -147,15 +157,13 @@ namespace xrslam {
 					painter->set_image(frame->image.get());
 					for (size_t i = 0; i < frame->keypoint_num(); ++i) {
 						if (Track *track = frame->get_track(i)) {
-							color3b c = { 0, 255, 0 };
-							painter->point(apply_k(frame->get_keypoint(i), frame->K)
-								.cast<int>(),
-								c, 5);
+							color3b color = { 0, 255, 0 };
+							painter->point(apply_k(frame->get_keypoint(i), frame->K).cast<int>(),
+								color, 5);
 						}
 						else {
 							color3b c = { 255, 0, 255 };
-							painter->point(apply_k(frame->get_keypoint(i), frame->K)
-								.cast<int>(),
+							painter->point(apply_k(frame->get_keypoint(i), frame->K).cast<int>(),
 								c, 5, 1);
 						}
 					}
@@ -164,6 +172,10 @@ namespace xrslam {
 		}
 		if (slidind_window_frame_tag)
 			detail->frontend->issue_frame(map->get_frame(map->frame_num() - 1));
+
+		clock_t feature_track_end = clock();
+		std::cout << "feature track time: " <<
+			double(feature_track_end - feature_track_start) / CLOCKS_PER_SEC << "s" << std::endl;
 	}
 
 	void FeatureTracker::track_frame(std::unique_ptr<Frame> frame) {

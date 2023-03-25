@@ -16,6 +16,7 @@ namespace xrslam {
 
 		void work(std::unique_lock<std::mutex> &l) override;
 
+		// 主线程将frame数据传送到feature_track线程中
 		void track_frame(std::unique_ptr<Frame> frame);
 
 		void mirror_map(Map *sliding_window_tracker_map);
@@ -30,13 +31,13 @@ namespace xrslam {
 		std::optional<std::tuple<double, PoseState, MotionState>>
 			get_latest_state() const;
 
-		std::unique_ptr<Map> map;
-		std::unique_ptr<Map> keymap;
+		std::unique_ptr<Map> map;		// slam系统中维护的地图
+		std::unique_ptr<Map> keymap;	// slam系统中维护的关键帧地图
 
 	private:
-		XRSLAM::Detail*						detail;
-		std::shared_ptr<Config>				config;
-		std::deque<std::unique_ptr<Frame>>	frames;
+		XRSLAM::Detail*						detail;		// slam系统handle
+		std::shared_ptr<Config>				config;		// slam系统配置
+		std::deque<std::unique_ptr<Frame>>	frames;		// 待处理图像帧
 
 		// mutable突破const的限制，在const函数中也可改变
 		mutable std::mutex					latest_pose_mutex;

@@ -56,7 +56,7 @@ public:
 		config(yaml_config) {
 
 		trajectory_color = { 0.0, 1.0, 1.0, 1.0 };	// 红、绿、蓝、不透明度
-		camera_color = { 1.0, 1.0, 0.0, 1.0 };		// 红、绿、蓝、不透明度
+		camera_color = { 1.0, 0.0, 0.0, 1.0 };		// 红、绿、蓝、不透明度
 
 		feature_tracker_painter =
 			std::make_unique<OpenCvPainter>(feature_tracker_cvimage);
@@ -120,20 +120,15 @@ public:
 					auto pose = xrslam->track_camera(image);
 					if (!pose.q.coeffs().isZero()) {
 						Eigen::Vector3f p =
-							(pose.p -
-								pose.q * config->camera_to_body_translation())
-							.cast<float>();
+							(pose.p - pose.q * config->camera_to_body_translation()).cast<float>();
 						trajectory.push_back(p);
 						location() = { p.x(), p.y(), p.z() };
 						for (auto &output : outputs) {
 							output->write_pose(image->t, pose);
 						}
-						latest_camera_q =
-							pose.q *
-							config->camera_to_body_rotation().conjugate();
-						latest_camera_p =
-							pose.p -
-							pose.q * config->camera_to_body_translation();
+						
+						latest_camera_q = pose.q * config->camera_to_body_rotation().conjugate();
+						latest_camera_p = pose.p - pose.q * config->camera_to_body_translation();
 						add_camera(positions, latest_camera_p, latest_camera_q,
 							config->camera_intrinsic(), camera_color);	// 可视化当前相机姿态
 
@@ -147,11 +142,11 @@ public:
 								landmarks.push_back(p.p.cast<float>());
 								if (p.triangulated) {
 									landmarks_color.emplace_back(0.0, 1.0, 0.0,
-										0.5);
+										0.5);	// 三角化后的点设置为绿色
 								}
 								else {
 									landmarks_color.emplace_back(1.0, 0.0, 0.0,
-										0.5);
+										0.5);	// 未三角化的点设置为红色
 								}
 							}
 						}
@@ -333,7 +328,7 @@ int main(int argc, char *argv[]) {
         PlayerVisualizer vis(std::move(xrslam), std::move(reader),
                              std::move(outputs), play, yaml_config);
         vis.show();
-        return lightvis::main();
+		return lightvis::main();
 #else
         fprintf(stderr, "Current build can only run in headless mode.");
         return EXIT_FAILURE;
